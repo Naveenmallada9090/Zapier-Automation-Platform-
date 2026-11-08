@@ -18,6 +18,7 @@ async function main() {
             where :{},
             take: 10
         })
+        console.log(pendingRows);
 
         producer.send({
             topic: TOPIC_NAME,
@@ -34,7 +35,9 @@ async function main() {
                     in: pendingRows.map(r => r.id)
                 }
             }
-        }) 
+        })
+        
+        await new Promise(r => setTimeout(r, 3000));
     }
 }
 
