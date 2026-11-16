@@ -44,11 +44,11 @@ CREATE TABLE "AvailableAction" (
 );
 
 -- CreateTable
-CREATE TABLE "AvailableTriggers" (
+CREATE TABLE "AvailableTrigger" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
 
-    CONSTRAINT "AvailableTriggers_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "AvailableTrigger_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -75,7 +75,7 @@ CREATE UNIQUE INDEX "Trigger_zapId_key" ON "Trigger"("zapId");
 CREATE UNIQUE INDEX "ZapRunOutbox_zapRunId_key" ON "ZapRunOutbox"("zapRunId");
 
 -- AddForeignKey
-ALTER TABLE "Trigger" ADD CONSTRAINT "Trigger_triggerId_fkey" FOREIGN KEY ("triggerId") REFERENCES "AvailableTriggers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Trigger" ADD CONSTRAINT "Trigger_triggerId_fkey" FOREIGN KEY ("triggerId") REFERENCES "AvailableTrigger"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Trigger" ADD CONSTRAINT "Trigger_zapId_fkey" FOREIGN KEY ("zapId") REFERENCES "Zap"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
