@@ -92,3 +92,28 @@ model PasswordResetToken {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 }
+
+model ActionExecution {
+  id          String                @id @default(uuid())
+  zapRunId    String
+  actionRowId String
+  stage       Int
+  actionId    String
+  status      ActionExecutionStatus @default(PENDING)
+  reference   String                @unique
+  signature   String?
+  attempts    Int                   @default(0)
+  error       String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@unique([zapRunId, actionRowId])
+  @@index([zapRunId, stage])
+}
+
+enum ActionExecutionStatus {
+  PENDING
+  SENT
+  CONFIRMED
+  FAILED
+}
