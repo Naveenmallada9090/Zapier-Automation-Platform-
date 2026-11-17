@@ -3,14 +3,19 @@ import { Appbar } from "@/components/Appbar";
 import { CheckFeature } from "@/components/CheckFeature";
 import { Input } from "@/components/Input";
 import { PrimaryButton } from "@/components/buttons/PrimaryButton";
+import { SecondaryButton } from "@/components/buttons/SecondaryButton";
 import axios from "axios";
 import { useState } from "react";
 import { BACKEND_URL } from "../config";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [needsVerification, setNeedsVerification] = useState(false);
+    const [resent, setResent] = useState(false);
     const router = useRouter();
     
     return <div> 
@@ -37,15 +42,41 @@ export default function() {
                     <Input onChange={e => {
                         setPassword(e.target.value);
                     }} label={"Password"} type="password" placeholder="Password"></Input>
+
+                    {error && <div className="pt-4 text-red-600">
+                        {error}
+                    </div>}
+
+                    {needsVerification && <div className="pt-2">
+                        {resent ? <div className="text-green-700">
+                            A new verification email has been sent
+                        </div> : <SecondaryButton onClick={async () => {
+                            await axios.post(`${BACKEND_URL}/api/v1/user/resend-verification`, {
+                                username: email
+                            });
+                            setResent(true);
+                        }}>Resend verification email</SecondaryButton>}
+                    </div>}
+
                     <div className="pt-4">
                         <PrimaryButton onClick={async () => {
-                            const res = await axios.post(`${BACKEND_URL}/api/v1/user/signin`, {
-                                username: email,
-                                password,
-                            });
-                            localStorage.setItem("token", res.data.token);
-                            router.push("/dashboard");
+                            try {
+                                const res = await axios.post(`${BACKEND_URL}/api/v1/user/signin`, {
+                                    username: email,
+                                    password,
+                                });
+                                localStorage.setItem("token", res.data.token);
+                                router.push("/dashboard");
+                            } catch (e: any) {
+                                const message = e.response?.data?.message ?? "Could not log you in";
+                                setError(message);
+                                setNeedsVerification(message.toLowerCase().includes("verify"));
+                            }
                         }} size="big">Login</PrimaryButton>
+                    </div>
+
+                    <div className="pt-4 text-sm">
+                        <Link className="underline" href="/forgot-password">Forgot your password?</Link>
                     </div>
                 </div>
             </div>

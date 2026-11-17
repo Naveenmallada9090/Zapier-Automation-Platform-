@@ -6,13 +6,13 @@ import { PrimaryButton } from "@/components/buttons/PrimaryButton";
 import axios from "axios";
 import { useState } from "react";
 import { BACKEND_URL } from "../config";
-import { useRouter } from "next/navigation";
 
 export default function() {
-    const router = useRouter();
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [sent, setSent] = useState(false);
+    const [error, setError] = useState("");
 
     return <div> 
         <Appbar />
@@ -32,26 +32,44 @@ export default function() {
 
                 </div>
                 <div className="flex-1 pt-6 pb-6 mt-12 px-4 border rounded">
-                    <Input label={"Name"} onChange={e => {
-                        setName(e.target.value)
-                    }} type="text" placeholder="Your name"></Input>
-                    <Input onChange={e => {
-                        setEmail(e.target.value)
-                    }} label={"Email"} type="text" placeholder="Your Email"></Input>
-                    <Input onChange={e => {
-                        setPassword(e.target.value)
-                    }} label={"Password"} type="password" placeholder="Password"></Input>
+                    {sent ? <div>
+                        <div className="text-xl font-semibold pb-4">
+                            Check your email
+                        </div>
+                        <div>
+                            We sent a verification link to <b>{email}</b>. Please verify your email before logging in.
+                        </div>
+                    </div> : <div>
+                        <Input label={"Name"} onChange={e => {
+                            setName(e.target.value)
+                        }} type="text" placeholder="Your name"></Input>
+                        <Input onChange={e => {
+                            setEmail(e.target.value)
+                        }} label={"Email"} type="text" placeholder="Your Email"></Input>
+                        <Input onChange={e => {
+                            setPassword(e.target.value)
+                        }} label={"Password"} type="password" placeholder="Password"></Input>
 
-                    <div className="pt-4">
-                        <PrimaryButton onClick={async () => {
-                            const res = await axios.post(`${BACKEND_URL}/api/v1/user/signup`, {
-                                username: email,
-                                password,
-                                name
-                            });
-                            router.push("/login");
-                        }} size="big">Get started free</PrimaryButton>
-                    </div>
+                        {error && <div className="pt-4 text-red-600">
+                            {error}
+                        </div>}
+
+                        <div className="pt-4">
+                            <PrimaryButton onClick={async () => {
+                                try {
+                                    await axios.post(`${BACKEND_URL}/api/v1/user/signup`, {
+                                        username: email,
+                                        password,
+                                        name
+                                    });
+                                    setError("");
+                                    setSent(true);
+                                } catch (e: any) {
+                                    setError(e.response?.data?.message ?? "Could not sign you up");
+                                }
+                            }} size="big">Get started free</PrimaryButton>
+                        </div>
+                    </div>}
                 </div>
             </div>
         </div>
