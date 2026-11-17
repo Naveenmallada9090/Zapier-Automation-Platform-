@@ -1,6 +1,7 @@
 "use client";
 import { Appbar } from "@/components/Appbar";
 import { CheckFeature } from "@/components/CheckFeature";
+import { DevEmailLink } from "@/components/DevEmailLink";
 import { Input } from "@/components/Input";
 import { PrimaryButton } from "@/components/buttons/PrimaryButton";
 import axios from "axios";
@@ -12,6 +13,7 @@ export default function() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [sent, setSent] = useState(false);
+    const [verificationLink, setVerificationLink] = useState<string>();
     const [error, setError] = useState("");
 
     return <div> 
@@ -39,6 +41,7 @@ export default function() {
                         <div>
                             We sent a verification link to <b>{email}</b>. Please verify your email before logging in.
                         </div>
+                        <DevEmailLink link={verificationLink} label="Verify my email" />
                     </div> : <div>
                         <Input label={"Name"} onChange={e => {
                             setName(e.target.value)
@@ -61,6 +64,8 @@ export default function() {
                                         username: email,
                                         password,
                                         name
+                                    }).then(res => {
+                                        setVerificationLink(res.data.verificationLink);
                                     });
                                     setError("");
                                     setSent(true);

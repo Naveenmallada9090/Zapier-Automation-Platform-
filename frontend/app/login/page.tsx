@@ -1,6 +1,7 @@
 "use client";
 import { Appbar } from "@/components/Appbar";
 import { CheckFeature } from "@/components/CheckFeature";
+import { DevEmailLink } from "@/components/DevEmailLink";
 import { Input } from "@/components/Input";
 import { PrimaryButton } from "@/components/buttons/PrimaryButton";
 import { SecondaryButton } from "@/components/buttons/SecondaryButton";
@@ -16,6 +17,7 @@ export default function() {
     const [error, setError] = useState("");
     const [needsVerification, setNeedsVerification] = useState(false);
     const [resent, setResent] = useState(false);
+    const [verificationLink, setVerificationLink] = useState<string>();
     const router = useRouter();
     
     return <div> 
@@ -51,12 +53,15 @@ export default function() {
                         {resent ? <div className="text-green-700">
                             A new verification email has been sent
                         </div> : <SecondaryButton onClick={async () => {
-                            await axios.post(`${BACKEND_URL}/api/v1/user/resend-verification`, {
+                            const res = await axios.post(`${BACKEND_URL}/api/v1/user/resend-verification`, {
                                 username: email
                             });
+                            setVerificationLink(res.data.verificationLink);
                             setResent(true);
                         }}>Resend verification email</SecondaryButton>}
                     </div>}
+
+                    <DevEmailLink link={verificationLink} label="Verify my email" />
 
                     <div className="pt-4">
                         <PrimaryButton onClick={async () => {

@@ -1,6 +1,7 @@
 "use client";
 import { Appbar } from "@/components/Appbar";
 import { CheckFeature } from "@/components/CheckFeature";
+import { DevEmailLink } from "@/components/DevEmailLink";
 import { Input } from "@/components/Input";
 import { PrimaryButton } from "@/components/buttons/PrimaryButton";
 import axios from "axios";
@@ -11,6 +12,7 @@ import Link from "next/link";
 export default function() {
     const [email, setEmail] = useState("");
     const [sent, setSent] = useState(false);
+    const [resetLink, setResetLink] = useState<string>();
     const [error, setError] = useState("");
 
     return <div>
@@ -37,6 +39,7 @@ export default function() {
                         <div>
                             If an account exists for <b>{email}</b>, we sent it a password reset link.
                         </div>
+                        <DevEmailLink link={resetLink} label="Reset my password" />
                     </div> : <div>
                         <Input onChange={e => {
                             setEmail(e.target.value)
@@ -51,6 +54,8 @@ export default function() {
                                 try {
                                     await axios.post(`${BACKEND_URL}/api/v1/user/forgot-password`, {
                                         username: email
+                                    }).then(res => {
+                                        setResetLink(res.data.resetLink);
                                     });
                                     setError("");
                                     setSent(true);
