@@ -21,8 +21,10 @@ model User {
   verified              Boolean   @default(false)
   verificationToken     String?   @unique
   verificationExpiresAt DateTime?
+  passwordResetTokens   PasswordResetToken[]
   zaps                  Zap[]
 }
+
 
 model Zap {
   id           String  @id @default(uuid())
@@ -79,4 +81,14 @@ model ZapRunOutbox {
   id          String @id @default(uuid())
   zapRunId    String @unique
   zapRun      ZapRun @relation(fields: [zapRunId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }

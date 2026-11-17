@@ -19,6 +19,15 @@ export const ResendVerificationSchema = z.object({
     username: z.string().min(5)
 });
 
+export const ForgotPasswordSchema = z.object({
+    username: z.string().min(5)
+});
+
+export const ResetPasswordSchema = z.object({
+    token: z.string().min(1),
+    password: z.string().min(6)
+});
+
 export const ZapCreateSchema = z.object({
     availableTriggerId: z.string(),
     triggerMetadata: z.any().optional(),
