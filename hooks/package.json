@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "tsc -b &&node dist/index.js"
+    "dev": "tsc -b && node dist/index.js"
   },
   "license": "ISC",
   "devDependencies": {
