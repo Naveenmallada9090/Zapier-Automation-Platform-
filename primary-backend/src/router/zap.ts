@@ -19,6 +19,11 @@ router.post("/", authMiddleware, async (req, res) => {
     }   
 
     const zapId = await prismaClient.$transaction(async tx => {
+        // collapse the stages the client sent into 0, 1, 2 ... so that gaps can
+        // never stall the worker. actions that share a stage run in parallel.
+        const requestedStages = parsedData.data.actions.map((x, index) => x.sortingOrder ?? index);
+        const stages = [...new Set(requestedStages)].sort((a, b) => a - b);
+
         const zap = await prismaClient.zap.create({
             data: {
                 userId: parseInt(id),
@@ -26,7 +31,7 @@ router.post("/", authMiddleware, async (req, res) => {
                 actions: {
                     create: parsedData.data.actions.map((x, index) => ({
                         actionId: x.availableActionId,
-                        sortingOrder: index,
+                        sortingOrder: stages.indexOf(requestedStages[index]),
                         metadata: x.actionMetadata
                     }))
                 }

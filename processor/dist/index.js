@@ -19,14 +19,14 @@ async function main() {
             topic: TOPIC_NAME,
             messages: pendingRows.map(r => {
                 return {
-                    value: r.zapRunId
+                    value: JSON.stringify({ zapRunId: r.zapRunId, stage: 0 })
                 };
             })
         });
         await client.zapRunOutbox.deleteMany({
             where: {
                 id: {
-                    in: pendingRows.map(r => r.id)
+                    in: pendingRows.map(x => x.id)
                 }
             }
         });

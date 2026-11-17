@@ -195,7 +195,25 @@ async function main() {
             return;
           }
 
-          const parsedValue = JSON.parse(message.value?.toString());
+          const parsedValue = (() => {
+            try {
+              return JSON.parse(message.value?.toString() as string);
+            } catch (e) {
+              return null;
+            }
+          })();
+
+          if (!parsedValue) {
+            // a message that can not be parsed should not take the whole worker down
+            console.error("Skipping a message that is not valid json", message.value?.toString());
+            await consumer.commitOffsets([{
+              topic: TOPIC_NAME,
+              partition: partition,
+              offset: (parseInt(message.offset) + 1).toString()
+            }])
+            return;
+          }
+
           const zapRunId = parsedValue.zapRunId;
           const stage = parsedValue.stage;
 
@@ -238,12 +256,17 @@ async function main() {
 
           let failure: null | { retry: boolean, attempts: number } = null;
 
-          for (const action of currentActions) {
-            try {
-              await executeAction(zapRunId, action as Action, zapRunMetadata);
-            } catch (e) {
-              console.error(`Action ${action.actionId} failed`, e);
-              failure = await registerFailure(zapRunId, action as Action, e);
+          // every action of a stage runs in parallel, the stage only advances
+          // once all of them are done
+          const results = await Promise.allSettled(
+            currentActions.map(action => executeAction(zapRunId, action as Action, zapRunMetadata))
+          );
+
+          for (let i = 0; i < results.length; i++) {
+            const result = results[i];
+            if (result.status === "rejected") {
+              console.error(`Action ${currentActions[i].actionId} failed`, result.reason);
+              failure = await registerFailure(zapRunId, currentActions[i] as Action, result.reason);
               break;
             }
           }

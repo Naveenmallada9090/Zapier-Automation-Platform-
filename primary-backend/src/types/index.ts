@@ -34,5 +34,7 @@ export const ZapCreateSchema = z.object({
     actions: z.array(z.object({
         availableActionId: z.string(),
         actionMetadata: z.any().optional(),
+        // actions that share a sortingOrder run in parallel
+        sortingOrder: z.number().int().min(0).optional(),
     }))
 });

@@ -3,16 +3,23 @@
 import { BACKEND_URL } from "@/app/config";
 import { Appbar } from "@/components/Appbar";
 import { Input } from "@/components/Input";
-import { ZapCell } from "@/components/ZapCell";
-import { LinkButton } from "@/components/buttons/LinkButton";
 import { PrimaryButton } from "@/components/buttons/PrimaryButton";
+import { SecondaryButton } from "@/components/buttons/SecondaryButton";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ReactFlow, { Background, Controls, Edge, MarkerType, Node, Position } from "reactflow";
+import "reactflow/dist/style.css";
+
+type AvailableItem = {
+    id: string;
+    name: string;
+    image: string;
+}
 
 function useAvailableActionsAndTriggers() {
-    const [availableActions, setAvailableActions] = useState([]);
-    const [availableTriggers, setAvailableTriggers] = useState([]);
+    const [availableActions, setAvailableActions] = useState<AvailableItem[]>([]);
+    const [availableTriggers, setAvailableTriggers] = useState<AvailableItem[]>([]);
 
     useEffect(() => {
         axios.get(`${BACKEND_URL}/api/v1/trigger/available`)
@@ -28,114 +35,275 @@ function useAvailableActionsAndTriggers() {
     }
 }
 
+type SelectedAction = {
+    key: number;
+    availableActionId: string;
+    availableActionName: string;
+    metadata: any;
+}
+
+type Stage = {
+    key: number;
+    actions: SelectedAction[];
+}
+
+type ModalTarget =
+    | { kind: "trigger" }
+    | { kind: "action", stageIndex: number, actionIndex: number };
+
 export default function() {
     const router = useRouter();
     const { availableActions, availableTriggers } = useAvailableActionsAndTriggers();
     const [selectedTrigger, setSelectedTrigger] = useState<{
         id: string;
         name: string;
+        image: string;
     }>();
 
-    const [selectedActions, setSelectedActions] = useState<{
-        index: number;
-        availableActionId: string;
-        availableActionName: string;
-        metadata: any;
-    }[]>([]);
-    const [selectedModalIndex, setSelectedModalIndex] = useState<null | number>(null);
+    const [stages, setStages] = useState<Stage[]>([]);
+    const [modal, setModal] = useState<ModalTarget | null>(null);
+    const [error, setError] = useState("");
+    const keyRef = useRef(1);
+    const nextKey = () => keyRef.current++;
+
+    const { nodes, edges } = useMemo(() => {
+        const nodes: Node[] = [];
+        const edges: Edge[] = [];
+        const columnWidth = 300;
+        const rowHeight = 100;
+
+        nodes.push({
+            id: "trigger",
+            position: { x: 0, y: 0 },
+            data: {
+                label: <div className="flex items-center gap-2 w-[180px]">
+                    {selectedTrigger?.image
+                        ? <img src={selectedTrigger.image} width={24} className="rounded-full" />
+                        : <div className="w-6 h-6 rounded-full bg-slate-200" />}
+                    <div className="text-sm font-semibold truncate">{selectedTrigger?.name ?? "Select trigger"}</div>
+                </div>
+            },
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left,
+            draggable: false
+        });
+
+        let previousIds = ["trigger"];
+
+        stages.forEach((stage, stageIndex) => {
+            const currentIds: string[] = [];
+            const count = stage.actions.length;
+
+            stage.actions.forEach((action, actionIndex) => {
+                const id = `stage-${stageIndex}-action-${action.key}`;
+                currentIds.push(id);
+
+                const item = availableActions.find(x => x.id === action.availableActionId);
+
+                nodes.push({
+                    id,
+                    position: {
+                        x: (stageIndex + 1) * columnWidth,
+                        y: (actionIndex - (count - 1) / 2) * rowHeight
+                    },
+                    data: {
+                        label: <div className="flex items-center gap-2 w-[180px]">
+                            {item?.image
+                                ? <img src={item.image} width={24} className="rounded-full" />
+                                : <div className="w-6 h-6 rounded-full bg-slate-200" />}
+                            <div className="text-sm font-semibold truncate">{action.availableActionName || "Select action"}</div>
+                            <button className="ml-auto text-gray-400 hover:text-red-600" onClick={(e) => {
+                                e.stopPropagation();
+                                removeAction(stageIndex, actionIndex);
+                            }}>✕</button>
+                        </div>
+                    },
+                    sourcePosition: Position.Right,
+                    targetPosition: Position.Left,
+                    draggable: false
+                });
+            });
+
+            previousIds.forEach(source => currentIds.forEach(target => {
+                edges.push({
+                    id: `${source}->${target}`,
+                    source,
+                    target,
+                    markerEnd: { type: MarkerType.ArrowClosed },
+                    style: { strokeWidth: 2 }
+                });
+            }));
+
+            previousIds = currentIds;
+        });
+
+        return { nodes, edges };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stages, selectedTrigger, availableActions]);
+
+    function removeAction(stageIndex: number, actionIndex: number) {
+        setStages(prev => prev
+            .map((stage, si) => si !== stageIndex
+                ? stage
+                : { ...stage, actions: stage.actions.filter((_, ai) => ai !== actionIndex) })
+            .filter(stage => stage.actions.length > 0)
+        );
+    }
+
+    function onSelect(props: null | { name: string, id: string, metadata: any }) {
+        const target = modal;
+        setModal(null);
+
+        if (!props || !target) {
+            return;
+        }
+
+        const image = [...availableTriggers, ...availableActions].find(x => x.id === props.id)?.image ?? "";
+
+        if (target.kind === "trigger") {
+            setSelectedTrigger({
+                id: props.id,
+                name: props.name,
+                image
+            });
+            return;
+        }
+
+        setStages(prev => {
+            const next = prev.map(stage => ({ ...stage, actions: [...stage.actions] }));
+
+            if (target.stageIndex >= next.length) {
+                next.push({ key: nextKey(), actions: [] });
+            }
+
+            const action: SelectedAction = {
+                key: nextKey(),
+                availableActionId: props.id,
+                availableActionName: props.name,
+                metadata: props.metadata
+            };
+
+            if (target.actionIndex < 0) {
+                next[target.stageIndex].actions.push(action);
+            } else {
+                next[target.stageIndex].actions[target.actionIndex] = {
+                    ...action,
+                    key: next[target.stageIndex].actions[target.actionIndex].key
+                };
+            }
+
+            return next;
+        });
+    }
+
+    async function publish() {
+        if (!selectedTrigger?.id) {
+            setError("Please select a trigger");
+            return;
+        }
+
+        if (stages.length === 0) {
+            setError("Please add at least one action");
+            return;
+        }
+
+        if (stages.some(stage => stage.actions.some(a => !a.availableActionId))) {
+            setError("Every action needs to be configured");
+            return;
+        }
+
+        try {
+            await axios.post(`${BACKEND_URL}/api/v1/zap`, {
+                availableTriggerId: selectedTrigger.id,
+                triggerMetadata: {},
+                actions: stages.flatMap((stage, sortingOrder) => stage.actions.map(a => ({
+                    availableActionId: a.availableActionId,
+                    actionMetadata: a.metadata ?? {},
+                    sortingOrder
+                })))
+            }, {
+                headers: {
+                    Authorization: localStorage.getItem("token")
+                }
+            });
+
+            router.push("/dashboard");
+        } catch (e: any) {
+            setError(e.response?.data?.message ?? "Could not publish the zap");
+        }
+    }
 
     return <div>
         <Appbar />
-        <div className="flex justify-end bg-slate-200 p-4">
-            <PrimaryButton onClick={async () => {
-                if (!selectedTrigger?.id) {
-                    return;
-                }
-
-                const response = await axios.post(`${BACKEND_URL}/api/v1/zap`, {
-                    "availableTriggerId": selectedTrigger.id,
-                    "triggerMetadata": {},
-                    "actions": selectedActions.map(a => ({
-                        availableActionId: a.availableActionId,
-                        actionMetadata: a.metadata
-                    }))
-                }, {
-                    headers: {
-                        Authorization: localStorage.getItem("token")
-                    }
-                })
-                
-                router.push("/dashboard");
-
-            }}>Publish</PrimaryButton>
+        <div className="flex justify-end items-center gap-4 bg-slate-200 p-4">
+            {error && <div className="text-red-600">{error}</div>}
+            <PrimaryButton onClick={publish}>Publish</PrimaryButton>
         </div>
-        <div className="w-full min-h-screen bg-slate-200 flex flex-col justify-center">
-            <div className="flex justify-center w-full">
-                <ZapCell onClick={() => {
-                    setSelectedModalIndex(1);
-                }} name={selectedTrigger?.name ? selectedTrigger.name : "Trigger"} index={1} />
+        <div className="w-full bg-slate-200">
+            <div style={{ width: "100%", height: 520 }}>
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    fitView
+                    nodesDraggable={false}
+                    nodesConnectable={false}
+                    onNodeClick={(_, node) => {
+                        if (node.id === "trigger") {
+                            setModal({ kind: "trigger" });
+                            return;
+                        }
+
+                        stages.forEach((stage, stageIndex) => {
+                            stage.actions.forEach((action, actionIndex) => {
+                                if (node.id === `stage-${stageIndex}-action-${action.key}`) {
+                                    setModal({ kind: "action", stageIndex, actionIndex });
+                                }
+                            });
+                        });
+                    }}
+                >
+                    <Background />
+                    <Controls showInteractive={false} />
+                </ReactFlow>
             </div>
-            <div className="w-full pt-2 pb-2">
-                {selectedActions.map((action, index) => <div className="pt-2 flex justify-center"> <ZapCell onClick={() => {
-                    setSelectedModalIndex(action.index);
-                }} name={action.availableActionName ? action.availableActionName : "Action"} index={action.index} /> </div>)}
-            </div>
-            <div className="flex justify-center">
-                <div>
-                    <PrimaryButton onClick={() => {
-                        setSelectedActions(a => [...a, {
-                            index: a.length + 2,
-                            availableActionId: "",
-                            availableActionName: "",
-                            metadata: {}
-                        }])
-                    }}><div className="text-2xl">
-                        +
-                    </div></PrimaryButton>
-                </div>
+            <div className="flex flex-wrap gap-3 justify-center pb-6">
+                <SecondaryButton onClick={() => setModal({ kind: "action", stageIndex: stages.length, actionIndex: -1 })}>
+                    + Add step
+                </SecondaryButton>
+                {stages.map((stage, stageIndex) => <SecondaryButton key={stage.key} onClick={() => setModal({
+                    kind: "action",
+                    stageIndex,
+                    actionIndex: -1
+                })}>
+                    + Parallel action in step {stageIndex + 1}
+                </SecondaryButton>)}
             </div>
         </div>
-        {selectedModalIndex && <Modal availableItems={selectedModalIndex === 1 ? availableTriggers : availableActions} onSelect={(props: null | { name: string; id: string; metadata: any; }) => {
-            if (props === null) {
-                setSelectedModalIndex(null);
-                return;
-            }
-            if (selectedModalIndex === 1) {
-                setSelectedTrigger({
-                    id: props.id,
-                    name: props.name
-                })
-            } else {
-                setSelectedActions(a => {
-                    let newActions = [...a];
-                    newActions[selectedModalIndex - 2] = {
-                        index: selectedModalIndex,
-                        availableActionId: props.id,
-                        availableActionName: props.name,
-                        metadata: props.metadata
-                    }
-                    return newActions
-                })
-            }
-            setSelectedModalIndex(null);
-        }} index={selectedModalIndex} />}
+        {modal && <Modal
+            availableItems={modal.kind === "trigger" ? availableTriggers : availableActions}
+            isTrigger={modal.kind === "trigger"}
+            onSelect={onSelect}
+        />}
     </div>
 }
 
-function Modal({ index, onSelect, availableItems }: { index: number, onSelect: (props: null | { name: string; id: string; metadata: any; }) => void, availableItems: {id: string, name: string, image: string;}[] }) {
+function Modal({ onSelect, availableItems, isTrigger }: {
+    onSelect: (props: null | { name: string, id: string, metadata: any }) => void,
+    availableItems: AvailableItem[],
+    isTrigger: boolean
+}) {
     const [step, setStep] = useState(0);
     const [selectedAction, setSelectedAction] = useState<{
         id: string;
         name: string;
     }>();
-    const isTrigger = index === 1;
 
     return <div className="fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full bg-slate-100 bg-opacity-70 flex">
         <div className="relative p-4 w-full max-w-2xl max-h-full">
             <div className="relative bg-white rounded-lg shadow ">
                 <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t ">
                     <div className="text-xl">
-                        Select {index === 1 ? "Trigger" : "Action"}
+                        Select {isTrigger ? "Trigger" : "Action"}
                     </div>
                     <button onClick={() => {
                         onSelect(null);
@@ -162,7 +330,7 @@ function Modal({ index, onSelect, availableItems }: { index: number, onSelect: (
                     }} />}
 
                     {step === 0 && <div>{availableItems.map(({id, name, image}) => {
-                            return <div onClick={() => {
+                            return <div key={id} onClick={() => {
                                 if (isTrigger) {
                                     onSelect({
                                         id,
@@ -179,7 +347,7 @@ function Modal({ index, onSelect, availableItems }: { index: number, onSelect: (
                             }} className="flex border p-4 cursor-pointer hover:bg-slate-100">
                                 <img src={image} width={30} className="rounded-full" /> <div className="flex flex-col justify-center"> {name} </div>
                             </div>
-                        })}</div>}                    
+                        })}</div>}
                 </div>
             </div>
         </div>
