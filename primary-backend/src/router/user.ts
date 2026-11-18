@@ -302,7 +302,11 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
                 id: resetToken.userId
             },
             data: {
-                passwordHash
+                passwordHash,
+                // logs out every session that was opened with the old password
+                tokenVersion: {
+                    increment: 1
+                }
             }
         }),
         prismaClient.passwordResetToken.update({
@@ -355,7 +359,8 @@ router.post("/signin", signinLimiter, async (req, res) => {
 
     // sign the jwt
     const token = jwt.sign({
-        id: user.id
+        id: user.id,
+        tokenVersion: user.tokenVersion
     }, JWT_PASSWORD);
 
     res.json({
