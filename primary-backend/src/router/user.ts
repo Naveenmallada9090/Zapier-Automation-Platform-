@@ -99,7 +99,7 @@ router.post("/signup", signupLimiter, async (req, res) => {
             passwordHash,
             name: parsedData.data.name,
             verified: false,
-            verificationToken,
+            verificationToken: hashToken(verificationToken),
             verificationExpiresAt
         }
     })
@@ -195,7 +195,7 @@ router.post("/resend-verification", resendVerificationLimiter, async (req, res) 
             id: user.id
         },
         data: {
-            verificationToken,
+            verificationToken: hashToken(verificationToken),
             verificationExpiresAt
         }
     })
@@ -247,7 +247,7 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
 
         await prismaClient.passwordResetToken.create({
             data: {
-                token,
+                token: hashToken(token),
                 userId: user.id,
                 expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS)
             }
