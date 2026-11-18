@@ -361,7 +361,9 @@ router.post("/signin", signinLimiter, async (req, res) => {
     const token = jwt.sign({
         id: user.id,
         tokenVersion: user.tokenVersion
-    }, JWT_PASSWORD);
+    }, JWT_PASSWORD, {
+        expiresIn: "7d"
+    });
 
     res.json({
         token: token,
