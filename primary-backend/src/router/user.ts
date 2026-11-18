@@ -8,6 +8,7 @@ import { prismaClient } from "../db";
 import jwt from "jsonwebtoken";
 import { FRONTEND_URL, JWT_PASSWORD } from "../config";
 import { isMailConfigured, sendMail } from "../lib/mailer";
+import { forgotPasswordLimiter, resendVerificationLimiter, resetPasswordLimiter, signinLimiter, signupLimiter, verifyLimiter } from "../lib/rateLimit";
 
 const router = Router();
 
@@ -58,7 +59,7 @@ async function sendPasswordResetEmail(email: string, name: string, token: string
     return link;
 }
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", signupLimiter, async (req, res) => {
     const body = req.body;
     const parsedData = SignupSchema.safeParse(body);
 
@@ -112,7 +113,7 @@ router.post("/signup", async (req, res) => {
 
 })
 
-router.post("/verify", async (req, res) => {
+router.post("/verify", verifyLimiter, async (req, res) => {
     const parsedData = VerificationRequestSchema.safeParse(req.body);
 
     if (!parsedData.success) {
@@ -155,7 +156,7 @@ router.post("/verify", async (req, res) => {
     })
 })
 
-router.post("/resend-verification", async (req, res) => {
+router.post("/resend-verification", resendVerificationLimiter, async (req, res) => {
     const parsedData = ResendVerificationSchema.safeParse({
         username: req.body?.username
     });
@@ -206,7 +207,7 @@ router.post("/resend-verification", async (req, res) => {
     })
 })
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
     const parsedData = ForgotPasswordSchema.safeParse(req.body);
 
     if (!parsedData.success) {
@@ -259,7 +260,7 @@ router.post("/forgot-password", async (req, res) => {
     })
 })
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
     const parsedData = ResetPasswordSchema.safeParse(req.body);
 
     if (!parsedData.success) {
@@ -312,7 +313,7 @@ router.post("/reset-password", async (req, res) => {
     })
 })
 
-router.post("/signin", async (req, res) => {
+router.post("/signin", signinLimiter, async (req, res) => {
     const body = req.body;
     const parsedData = SigninSchema.safeParse(body);
 
