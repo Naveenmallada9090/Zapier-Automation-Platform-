@@ -23,6 +23,13 @@ export async function hashPassword(password: string) {
     return bcrypt.hash(password, SALT_ROUNDS);
 }
 
+// Verification and reset tokens are high entropy already, so a fast hash is
+// enough. Storing only the hash means a database dump cannot be replayed
+// against the verify/reset endpoints.
+export function hashToken(token: string) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 export async function verifyPassword(password: string, passwordHash: string) {
     return bcrypt.compare(password, passwordHash);
 }
@@ -124,7 +131,7 @@ router.post("/verify", verifyLimiter, async (req, res) => {
 
     const user = await prismaClient.user.findFirst({
         where: {
-            verificationToken: parsedData.data.token
+            verificationToken: hashToken(parsedData.data.token)
         }
     });
 
@@ -271,7 +278,7 @@ router.post("/reset-password", resetPasswordLimiter, async (req, res) => {
 
     const resetToken = await prismaClient.passwordResetToken.findFirst({
         where: {
-            token: parsedData.data.token
+            token: hashToken(parsedData.data.token)
         }
     });
 
