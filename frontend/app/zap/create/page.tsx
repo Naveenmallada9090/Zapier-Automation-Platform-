@@ -51,7 +51,7 @@ type ModalTarget =
     | { kind: "trigger" }
     | { kind: "action", stageIndex: number, actionIndex: number };
 
-export default function() {
+export default function ZapCreate() {
     const router = useRouter();
     const { availableActions, availableTriggers } = useAvailableActionsAndTriggers();
     const [selectedTrigger, setSelectedTrigger] = useState<{

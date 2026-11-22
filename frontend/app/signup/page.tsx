@@ -8,7 +8,7 @@ import axios from "axios";
 import { useState } from "react";
 import { BACKEND_URL } from "../config";
 
-export default function() {
+export default function Signup() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");

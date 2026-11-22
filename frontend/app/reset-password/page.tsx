@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BACKEND_URL } from "../config";
 
-export default function() {
+export default function ResetPassword() {
     const [token, setToken] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");

@@ -9,7 +9,7 @@ import { useState } from "react";
 import { BACKEND_URL } from "../config";
 import Link from "next/link";
 
-export default function() {
+export default function ForgotPassword() {
     const [email, setEmail] = useState("");
     const [sent, setSent] = useState(false);
     const [resetLink, setResetLink] = useState<string>();
