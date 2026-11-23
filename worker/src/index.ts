@@ -13,7 +13,7 @@ const MAX_ATTEMPTS = 5;
 
 const kafka = new Kafka({
     clientId: 'outbox-processor-2',
-    brokers: ['localhost:9092']
+    brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(",")
 })
 
 type Action = {
