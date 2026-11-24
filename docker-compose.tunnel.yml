@@ -1,0 +1,15 @@
+# Extra service for `scripts/start-tunnel.*`: a Cloudflare quick tunnel that gives
+# the local stack a public https url. No account, no card.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d tunnel
+#
+# The tunnel points at caddy (port 80 inside the network), so caddy must answer any
+# host name - the script sets DOMAIN=:80 in .env for that.
+
+services:
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://caddy:80
+    depends_on:
+      - caddy
+    restart: unless-stopped
