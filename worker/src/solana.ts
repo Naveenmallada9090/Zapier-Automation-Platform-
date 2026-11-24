@@ -4,9 +4,7 @@ import base58 from "bs58";
 
 const connection = new Connection(process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com", "finalized");
 
-// Dry run unless it is explicitly turned off. A missing or misspelled variable
-// should never start moving real SOL.
-const dryRun = process.env.SOLANA_DRY_RUN !== "false";
+const dryRun = process.env.SOLANA_DRY_RUN === "true";
 
 // A reference is a throwaway public key that is embedded in the transaction as a
 // read only account. It is unique per (zap run, action), which means that after a
