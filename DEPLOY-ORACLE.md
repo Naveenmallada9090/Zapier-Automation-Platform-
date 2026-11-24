@@ -1,5 +1,9 @@
 # Deploying on Oracle Cloud (Always Free)
 
+> **This path needs a Visa/Mastercard for the signup check** (never charged). If you only have a
+> RuPay card, use [DEPLOY.md](DEPLOY.md) instead: Vercel + Render + Supabase + GitHub Actions, no
+> card, nothing on your PC.
+
 Runs the whole stack — frontend, API, hooks, processor, worker, Postgres, Kafka, Caddy — on one
 ARM VM, for **$0/month**. No platform limits: nothing sleeps, nothing expires, no paid workers.
 
@@ -24,20 +28,20 @@ Oracle Console → **Compute → Instances → Create instance**
 | Name | `zapier` |
 | Image | **Canonical Ubuntu 24.04** (aarch64) |
 | Shape | **Ampere → VM.Standard.A1.Flex** |
-| OCPUs | **4** |
-| Memory | **24 GB** |
+| OCPUs | **2** |
+| Memory | **12 GB** |
 | Boot volume | 50 GB is fine (Always Free allows 200 GB total) |
 | Assign public IPv4 | **Yes** |
 | SSH keys | paste your public key, or download the generated private key |
 
 Create it and wait for **RUNNING**. Note the **Public IP address**.
 
-Always Free allows exactly 4 OCPU / 24 GB of A1 total, so this fills the quota. That is plenty:
-the stack idles at ~2–3 GB.
+Always Free currently gives 2 OCPU / 12 GB of A1 (it used to be 4 / 24 — if the console still
+offers that on your account, take it). Either size is plenty: the stack idles at ~2–3 GB.
 
-> **"Out of host capacity"** is common for A1.Flex. Try 2 OCPUs / 12 GB (still enough), retry in
-> a few hours, try a different availability domain, or upgrade the account to *Pay As You Go*
-> (Always Free resources stay free, and capacity is easier to get).
+> **"Out of host capacity"** is common for A1.Flex. Retry in a few hours, try a different
+> availability domain, or upgrade the account to *Pay As You Go* (Always Free resources stay free,
+> and capacity is easier to get).
 
 ## 2. Open ports 80 and 443 in the console
 
@@ -138,7 +142,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-First build takes ~5–10 minutes on 4 ARM cores (all images are multi-arch, so nothing needs
+First build takes ~5–10 minutes on 2 ARM cores (all images are multi-arch, so nothing needs
 patching). You want all of `caddy, frontend, hooks, primary-backend, processor, worker` up and
 `postgres, kafka` healthy. `migrate` runs once and exits with code 0 — that is correct.
 

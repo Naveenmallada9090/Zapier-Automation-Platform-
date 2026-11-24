@@ -1,0 +1,64 @@
+name: Run pending zaps
+
+# Free alternative to an always-on worker: every 5 minutes this takes the rows
+# from ZapRunOutbox, runs the actions and exits. Nothing to pay for and nothing
+# to keep running, as long as the repository is public (Actions minutes are free
+# on public repos).
+#
+# Needed repository secrets (Settings -> Secrets and variables -> Actions):
+#   DATABASE_URL      postgres connection string (neon, supabase, ...)
+#   BREVO_API_KEY     https api key, because smtp is blocked on the free web hosts
+#   SMTP_FROM         verified sender address
+#   SOLANA_RPC_URL    rpc endpoint
+#   SOL_PRIVATE_KEY   only needed when real transfers are enabled
+#   SOLANA_DRY_RUN    "false" to really send SOL, anything else (or unset) is a dry run
+#
+# If the repository is private the 2000 free minutes a month are not enough for a
+# 5 minute schedule - change the cron below to "0 * * * *" (hourly).
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: run-zaps
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      - name: install
+        run: npm ci
+
+      - name: build
+        run: |
+          npx prisma generate
+          npx tsc -b --force
+
+      - name: run the pending zap runs
+        run: node dist/once.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_ENDPOINT: ${{ secrets.SMTP_ENDPOINT }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SOL_PRIVATE_KEY: ${{ secrets.SOL_PRIVATE_KEY }}
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          SOLANA_DRY_RUN: ${{ secrets.SOLANA_DRY_RUN }}

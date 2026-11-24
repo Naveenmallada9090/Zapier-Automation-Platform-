@@ -1,8 +1,11 @@
-databases:
-  - name: zapier-db
-    plan: free
-    databaseName: zapier
-    user: zapier
+# Blueprint for the free, card-free deployment.
+#
+# Two web services on render's free plan (no credit card). The database lives on
+# supabase or neon (DATABASE_URL) and the worker loop runs as a scheduled github
+# action, so nothing here is a paid resource.
+#
+# Render cannot send mail on smtp ports on the free plan, so both services use
+# brevo's https api (BREVO_API_KEY) instead.
 
 services:
   - type: web
@@ -15,12 +18,14 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: zapier-db
-          property: connectionString
+        sync: false
       - key: JWT_PASSWORD
         generateValue: true
       - key: FRONTEND_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SMTP_FROM
         sync: false
       - key: SMTP_ENDPOINT
         sync: false
@@ -29,8 +34,6 @@ services:
       - key: SMTP_USERNAME
         sync: false
       - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM
         sync: false
       - key: NODE_VERSION
         value: "22"
@@ -45,66 +48,6 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: zapier-db
-          property: connectionString
-      - key: NODE_VERSION
-        value: "22"
-
-  - type: worker
-    name: zapier-processor
-    runtime: node
-    plan: starter
-    rootDir: processor
-    buildCommand: npm install && npm run build
-    startCommand: npm start
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: zapier-db
-          property: connectionString
-      - key: KAFKA_BROKERS
         sync: false
-      - key: KAFKA_SASL_USERNAME
-        sync: false
-      - key: KAFKA_SASL_PASSWORD
-        sync: false
-      - key: KAFKA_SSL
-        value: "true"
-      - key: NODE_VERSION
-        value: "22"
-
-  - type: worker
-    name: zapier-worker
-    runtime: node
-    plan: starter
-    rootDir: worker
-    buildCommand: npm install && npm run build
-    startCommand: npm start
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: zapier-db
-          property: connectionString
-      - key: KAFKA_BROKERS
-        sync: false
-      - key: KAFKA_SASL_USERNAME
-        sync: false
-      - key: KAFKA_SASL_PASSWORD
-        sync: false
-      - key: KAFKA_SSL
-        value: "true"
-      - key: SMTP_ENDPOINT
-        sync: false
-      - key: SMTP_USERNAME
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SOL_PRIVATE_KEY
-        sync: false
-      - key: SOLANA_RPC_URL
-        sync: false
-      - key: SOLANA_DRY_RUN
-        value: "true"
       - key: NODE_VERSION
         value: "22"
