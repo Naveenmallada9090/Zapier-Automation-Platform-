@@ -1,0 +1,110 @@
+databases:
+  - name: zapier-db
+    plan: free
+    databaseName: zapier
+    user: zapier
+
+services:
+  - type: web
+    name: zapier-api
+    runtime: node
+    plan: free
+    rootDir: primary-backend
+    buildCommand: npm install && npm run build
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zapier-db
+          property: connectionString
+      - key: JWT_PASSWORD
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: SMTP_ENDPOINT
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: NODE_VERSION
+        value: "22"
+
+  - type: web
+    name: zapier-hooks
+    runtime: node
+    plan: free
+    rootDir: hooks
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zapier-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: "22"
+
+  - type: worker
+    name: zapier-processor
+    runtime: node
+    plan: starter
+    rootDir: processor
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zapier-db
+          property: connectionString
+      - key: KAFKA_BROKERS
+        sync: false
+      - key: KAFKA_SASL_USERNAME
+        sync: false
+      - key: KAFKA_SASL_PASSWORD
+        sync: false
+      - key: KAFKA_SSL
+        value: "true"
+      - key: NODE_VERSION
+        value: "22"
+
+  - type: worker
+    name: zapier-worker
+    runtime: node
+    plan: starter
+    rootDir: worker
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zapier-db
+          property: connectionString
+      - key: KAFKA_BROKERS
+        sync: false
+      - key: KAFKA_SASL_USERNAME
+        sync: false
+      - key: KAFKA_SASL_PASSWORD
+        sync: false
+      - key: KAFKA_SSL
+        value: "true"
+      - key: SMTP_ENDPOINT
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SOL_PRIVATE_KEY
+        sync: false
+      - key: SOLANA_RPC_URL
+        sync: false
+      - key: SOLANA_DRY_RUN
+        value: "true"
+      - key: NODE_VERSION
+        value: "22"

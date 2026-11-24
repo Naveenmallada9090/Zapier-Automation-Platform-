@@ -2,9 +2,16 @@ import { PrismaClient } from "@prisma/client";
 import { Kafka } from "kafkajs";
 const TOPIC_NAME = "zap-events";
 const client = new PrismaClient();
+const kafkaSasl = process.env.KAFKA_SASL_USERNAME ? {
+    mechanism: "plain",
+    username: process.env.KAFKA_SASL_USERNAME,
+    password: process.env.KAFKA_SASL_PASSWORD || ""
+} : undefined;
 const kafka = new Kafka({
     clientId: 'outbox-processor',
-    brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(",")
+    brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(","),
+    ssl: process.env.KAFKA_SSL === "true" || !!process.env.KAFKA_SASL_USERNAME,
+    ...(kafkaSasl ? { sasl: kafkaSasl } : {})
 });
 async function main() {
     const producer = kafka.producer();

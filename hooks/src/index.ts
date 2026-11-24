@@ -8,6 +8,10 @@ app.use(express.json());
 
 // https://hooks.zapier.com/hooks/catch/17043103/22b8496/
 // password logic
+app.get("/health", (req, res) => {
+    res.json({ status: "ok" });
+})
+
 app.post("/hooks/catch/:userId/:zapId", async (req, res) => {
     const userId = req.params.userId;
     const zapId = req.params.zapId;

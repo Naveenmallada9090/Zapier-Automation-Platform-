@@ -11,9 +11,17 @@ const prismaClient = new PrismaClient();
 const TOPIC_NAME = "zap-events"
 const MAX_ATTEMPTS = 5;
 
+const kafkaSasl = process.env.KAFKA_SASL_USERNAME ? {
+    mechanism: "plain" as const,
+    username: process.env.KAFKA_SASL_USERNAME,
+    password: process.env.KAFKA_SASL_PASSWORD || ""
+} : undefined;
+
 const kafka = new Kafka({
     clientId: 'outbox-processor-2',
-    brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(",")
+    brokers: (process.env.KAFKA_BROKERS || "localhost:9092").split(","),
+    ssl: process.env.KAFKA_SSL === "true" || !!process.env.KAFKA_SASL_USERNAME,
+    ...(kafkaSasl ? { sasl: kafkaSasl } : {})
 })
 
 type Action = {
