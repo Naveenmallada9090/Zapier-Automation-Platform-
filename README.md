@@ -2,6 +2,10 @@
 
 A modern automation platform inspired by Zapier, built with Next.js, TypeScript, and a microservices architecture. Create Zaps to automate workflows by connecting triggers and actions.
 
+## Live Demo
+
+**https://zapier-app-beta.vercel.app/**
+
 ## Project Architecture
 
 The project follows a microservices architecture with four main components:
