@@ -1,5 +1,8 @@
 # Deploying (Vercel + Render + Upstash)
 
+> **This setup is not free** — Render background workers are paid. For a $0 deployment that runs
+> the whole stack, see [DEPLOY-ORACLE.md](DEPLOY-ORACLE.md).
+
 The app is five processes, so it is split like this:
 
 | Part | Host |

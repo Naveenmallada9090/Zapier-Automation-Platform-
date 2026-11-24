@@ -1,0 +1,4 @@
+# shell scripts are run on linux servers - never check them out with CRLF
+*.sh text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf

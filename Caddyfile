@@ -18,6 +18,10 @@
 		reverse_proxy hooks:3002
 	}
 
+	handle /health {
+		reverse_proxy primary-backend:3000
+	}
+
 	handle {
 		reverse_proxy frontend:3000
 	}
