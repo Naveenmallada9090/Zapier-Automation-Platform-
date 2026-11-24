@@ -9,7 +9,7 @@ The project follows a microservices architecture with four main components:
 ### 1. Frontend (`/frontend`)
 - **Technology Stack**: Next.js 14, React 18, TypeScript, Tailwind CSS, Axios
 - **Port**: 3000 (default)
-- **Description**: User interface for creating, managing, and monitoring Zaps. Features a modern, responsive design with a drag-and-drop interface (planned).
+- **Description**: User interface for creating, managing, and monitoring Zaps. Features a modern, responsive design with a React Flow based, drag-and-drop workflow builder.
 
 ### 2. Hooks Service (`/hooks`)
 - **Technology Stack**: Express.js, TypeScript, Prisma, PostgreSQL
@@ -40,12 +40,14 @@ The project follows a microservices architecture with four main components:
 - **Solana Transactions**: Send SOL tokens to addresses
 - **Workflow Processing**: Background processing with Kafka and workers
 
+### Recently Completed
+- **Email Verification**: A verification link is emailed on signup, and signing in is blocked until the account is verified
+- **Password Reset**: Users can request a reset link and set a new password; every existing session token is invalidated
+- **Solana Reconciliation**: Each action stores a reference on chain, so a worker that restarts checks the blockchain before sending SOL again instead of paying a user twice
+- **Parallel Actions**: All actions that share a stage in a Zap run execute in parallel
+
 ### Planned Features (TODOS)
-1. **Email Verification**: Verify user emails before allowing login
-2. **Password Reset**: Allow users to reset passwords via email
-3. **Solana Reconciliation**: Handle failed/delayed Solana transactions
-4. **React Flow UI**: Improve Zap creation with visual workflow builder
-5. **Parallel Actions**: Support for parallel execution of actions
+1. **React Flow UI**: Polish the visual workflow builder (node editing, validation, cleaner layout)
 
 ## Getting Started
 
